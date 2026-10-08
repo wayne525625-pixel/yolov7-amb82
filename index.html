@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>YOLOv7 ODYSSEY · 在 AMB82-Mini 上部署 YOLOv7 學習航線</title>
+<style>
+:root{--bg:#0a1712;--panel:#10241c;--line:#24463a;--ink:#e9efe6;--mute:#8aa597;--cu:#e0a458;--ok:#6fe0a0;--bad:#ff7a63;
+--sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;--mono:ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 var(--sans);padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{max-width:900px;margin:auto;padding:2rem 1.1rem .6rem}
+h1{font-size:clamp(1.9rem,6vw,3.2rem);line-height:1.15;margin:0;font-weight:800;letter-spacing:.01em}
+header p{color:var(--mute);margin:.5rem 0 0}
+.wrap{max-width:900px;margin:auto;padding:0 1.1rem 3rem}
+.prog{height:8px;background:var(--panel);border-radius:4px;overflow:hidden;margin:1rem 0 .3rem;border:1px solid var(--line)}
+.prog i{display:block;height:100%;background:var(--cu);width:0;transition:width .4s}
+#pt{color:var(--mute);font-size:.88rem}
+nav{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0;position:relative}
+nav button{flex:1 1 118px;text-align:left;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:.5rem .7rem;font:inherit;font-size:.9rem;cursor:pointer;line-height:1.35}
+nav button b{display:block;color:var(--cu);font-family:var(--mono);font-size:.8rem}
+nav button.cur{border-color:var(--cu);background:#1a3328}
+nav button.done b::after{content:" ✓";color:var(--ok)}
+:focus-visible{outline:2px solid var(--cu);outline-offset:2px}
+article{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1.3rem 1.3rem 1.5rem}
+h2{font-size:1.6rem;margin:0 0 .2rem}
+.sub{color:var(--mute);margin:0 0 1rem}
+h3{font-size:1rem;margin:1.5rem 0 .5rem;padding-left:.6rem;border-left:4px solid var(--cu)}
+h3.l{border-color:#7fb8ff}h3.e{border-color:var(--ok)}
+p{margin:.5rem 0}
+code{font-family:var(--mono);background:#0a1712;padding:.1rem .35rem;border-radius:4px;font-size:.88em;color:var(--cu)}
+pre{background:#07100c;border:1px solid var(--line);border-radius:8px;padding:.8rem 1rem;overflow-x:auto;font:.85rem/1.55 var(--mono);color:#cfe3d6;margin:.6rem 0}
+.ck{display:block;padding:.35rem 0}.ck input{margin-right:.6rem;accent-color:var(--cu)}
+.box{background:#0a1712;border:1px solid var(--line);border-radius:8px;padding:.9rem 1rem;margin:.6rem 0}
+.btn,.opt{font:inherit;cursor:pointer}
+.btn{background:var(--cu);color:#1b1100;border:0;border-radius:6px;padding:.55rem 1.1rem;font-weight:700;margin:.4rem .4rem 0 0}
+.btn.g{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.opt{display:block;width:100%;text-align:left;background:#0a1712;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:.55rem .8rem;margin:.35rem 0}
+.opt:hover:not(:disabled){border-color:var(--cu)}.opt.ok{border-color:var(--ok);background:#0f3322}.opt.no{border-color:var(--bad);background:#33180f}
+.res{margin-top:.5rem;color:var(--mute)}
+canvas{width:100%;height:auto;aspect-ratio:480/300;background:#07100c;border-radius:8px;border:1px solid var(--line)}
+label{display:flex;justify-content:space-between;font-size:.9rem;color:var(--mute);margin-top:.5rem}
+input[type=range]{width:100%;accent-color:var(--cu)}
+.out{font-family:var(--mono);color:var(--ok);font-size:.9rem}
+.foot{display:flex;justify-content:space-between;flex-wrap:wrap;margin-top:1.4rem}
+small{color:var(--mute)}
+#map{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:#07100c;margin:1rem 0}
+#map svg{display:block}
+.nd{cursor:pointer}.nd:focus-visible{outline:none}.nd:focus-visible circle:first-child{stroke:var(--cu);stroke-width:2}
+.nd text{font-family:var(--sans)}
+@media(prefers-reduced-motion:no-preference){.halo{transform-box:fill-box;transform-origin:center;animation:pl 2.2s ease-out infinite}}
+@keyframes pl{from{transform:scale(.8);opacity:.8}to{transform:scale(1.6);opacity:0}}
+.steps{display:flex;flex-wrap:wrap;gap:.4rem;margin:.6rem 0}
+.steps button{font:inherit;font-size:.85rem;background:#0a1712;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:.3rem .6rem;cursor:pointer}
+.steps button.on{border-color:var(--cu);color:var(--cu)}
+.hl{background:#3a2d12;display:inline-block;width:calc(100% + 2rem);margin:0 -1rem;padding:0 1rem;border-left:3px solid var(--cu)}
+.nt ul{margin:.3rem 0;padding-left:1.2rem}.nt li{margin:.25rem 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>YOLOv7 ODYSSEY</h1>
+  <p>在 AMB82-Mini 上部署 YOLOv7：訓練 → 重新參數化 → 轉 .nb → Arduino 即時偵測。每個任務依序：學習、實驗、動手做。</p>
+  <div class="prog"><i id="pb"></i></div><div id="pt"></div>
+</header>
+<div class="wrap">
+  <div id="map" role="navigation" aria-label="星圖路線，選擇任務"></div>
+  <article id="ms" aria-live="polite"></article>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const M=[
+{t:"認識板子",s:"AMB82-Mini 與內建 NN 引擎",
+ learn:`<p>AMB82-Mini（AmebaPro2）內建神經網路（NN）引擎，可在板上直接做物件偵測與人臉辨識，不需要把影像送上雲端。Arduino SDK 的 <code>modelSelect()</code> 目前提供 YOLOv3-tiny、YOLOv4-tiny、YOLOv7-tiny 三種物件偵測模型，每種都有 <code>DEFAULT_</code>（內建）與 <code>CUSTOMIZED_</code>（自訂）兩種選項。</p>
+ <p>預設模型放在 SDK 的 <code>variants/common_nn_models</code> 資料夾。自訂模型要先轉成 <code>.nb</code> 格式，再用 SD 卡或燒錄進 Flash 的方式載入。</p>`,
+ exp:"pick",
+ build:["在 Arduino IDE 安裝 Ameba 的 AmebaPro2 板子套件","選擇 AMB82-Mini 並連上序列埠","開啟 File → Examples → AmebaNN → ObjectDetectionLoop","先用 DEFAULT_YOLOV7TINY 跑通，確認 Serial 有輸出偵測結果"]},
+{t:"訓練",s:"為什麼一定要用 yolov7-tiny",
+ learn:`<p>AMB82-Mini 只能跑 <b>yolov7-tiny</b>，完整的 YOLOv7 無法部署。Ameba 論壇的官方回覆也建議：訓練時用 tiny 架構，訓練完成後再做重新參數化。</p>
+ <p>訓練流程跟一般 YOLOv7 相同，只是設定檔換成 tiny 版本。類別數 <code>nc</code> 要改成你自己的類別數，之後的 deploy yaml 也要用同一個數字。</p>
+<pre>python train.py --weights yolov7-tiny.pt \\
+  --cfg cfg/training/yolov7-tiny-custom.yaml \\
+  --data data/custom.yaml \\
+  --hyp data/hyp.scratch.tiny.yaml \\
+  --img 640 640 --epochs 100</pre>
+ <p><small>資料集較小、epoch 較少能讓模型檔更小，但要自行取捨準確度。</small></p>`,
+ exp:null,
+ build:["蒐集並標註自己的資料集（YOLO 格式）","建立 yolov7-tiny-custom.yaml，nc 設成自己的類別數","用 hyp.scratch.tiny.yaml 訓練，產生 best.pt","用 detect.py 在電腦上先驗證 best.pt 有框、有分數"]},
+{t:"重新參數化",s:"把訓練版合併成部署版",
+ learn:`<p>訓練時的 YOLOv7 含有多分支結構，部署時要合併成單一路徑。Ameba 的官方指引要求執行 <code>reparam_yolov7-tiny.py</code>，搭配 SDK 提供的 <code>yolov7-tiny-deploy.yaml</code>。</p>
+<pre>python reparam_yolov7-tiny.py \\
+  --weights weights/best.pt \\
+  --custom_yaml custom/yolov7-tiny-deploy.yaml \\
+  --output best_reparam.pt</pre>
+ <p>忘了這一步，是論壇上「模型載入了卻沒有偵測框」的常見原因之一。</p>`,
+ exp:null,
+ build:["從 Ameba SDK 取得 reparam_yolov7-tiny.py 與 yolov7-tiny-deploy.yaml","把 deploy yaml 的 nc 改成與訓練一致","執行重新參數化，得到 best_reparam.pt","用同一批測試圖確認 best_reparam.pt 結果與 best.pt 相近"]},
+{t:"匯出與轉檔",s:"ONNX → .nb（NBG）",
+ learn:`<p>重新參數化後要匯出 ONNX，再轉成 AMB82-Mini 的 <code>.nb</code> 格式。轉檔有兩條路：Ameba 提供的<b>線上轉換工具</b>，以及依 NN Deployment Guide 操作的<b>離線轉換</b>（匯入、量化、匯出三步）。</p>
+ <p>重點是匯出前要依官方的 YOLOv7-tiny NN 範例，<b>修改 YOLOv7 儲存庫 <code>models/yolo.py</code> 裡 <code>Detect</code> 類別的 forward 函式</b>，並選對輸出節點。節點選錯時，板子會載入模型但看不到框，或直接印出 No Back Trace。</p>
+ <p>量化需要代表性的校正圖片，建議用你的實際場景影像，而不是隨便找的圖。</p>`,
+ exp:null,
+ build:["依官方指引修改 Detect.forward 後匯出 ONNX","用線上工具轉換一次，作為對照基準","需要時改走離線流程，核對輸出節點名稱","得到 .nb 檔，檔名依 SDK 要求命名（論壇案例為 yolov7_tiny.nb）"]},
+{t:"Arduino 部署",s:"載入 .nb 並調整門檻",
+ learn:`<p>把 <code>modelSelect()</code> 改成自訂選項，再把 <code>.nb</code> 放到 sketch 資料夾，或改用 SD 卡載入（需在 IDE 啟用「從 SD 卡載入 NN 模型」）。以下是精簡骨架，完整程式請以 SDK 的 ObjectDetectionLoop 範例為準：</p>
+<pre>// 任務：物件偵測；模型：自訂 YOLOv7-tiny
+ObjDet.modelSelect(OBJECT_DETECTION,
+                   CUSTOMIZED_YOLOV7TINY,
+                   NA_MODEL, NA_MODEL);
+ObjDet.begin();
+// 範例預設 confidence 0.5、NMS 0.3
+// 在 ObjectClassList.h 把不要偵測的類別 filter 設為 0</pre>
+ <p>物件編號是固定的，不要更動；想關掉某類別，只改 filter 值。下一個任務會逐段解說完整範例；下面的實驗可以看門檻怎麼影響結果。</p>`,
+ exp:"nms",
+ build:["把 modelSelect 改成 CUSTOMIZED_YOLOV7TINY","把 .nb 放進 sketch 資料夾（或放到 SD 卡）","上傳後開 Serial Monitor，確認有 Total number of objects detected","用 RTSP 串流看畫面上的框，再微調門檻"]},
+{t:"程式解剖",s:"逐段讀懂 ObjectDetectionLoop",
+ learn:`<p>SDK 的 <code>ObjectDetectionLoop</code> 在 <code>loop()</code> 裡自己取結果、自己畫框；另一個範例 <code>ObjectDetectionCallback</code> 則是用回呼函式處理結果，其餘流程相同。下面的版本把模型改成 <code>CUSTOMIZED_YOLOV7TINY</code>，並把整份程式拆成九段。</p>
+ <p>整個程式做三件事：<b>相機分兩路</b>（高畫質走 RTSP 串流，小尺寸 RGB 給 NN）、<b>NN 讀取小畫面並輸出框</b>、<b>loop 把框畫回串流畫面</b>。</p>`,
+ exp:"code",
+ build:["開啟 File → Examples → AmebaNN → ObjectDetectionLoop，填入 ssid 與 pass","把 modelSelect 的模型改成 CUSTOMIZED_YOLOV7TINY","依自己的類別修改 ObjectClassList.h","上傳：按住 Boot、按一下 Reset、再放開 Boot","Serial Monitor 看到 IP 後，用 VLC 開啟 rtsp://IP:554 檢查畫面上的框"]},
+{t:"除錯",s:"看訊息找原因",
+ learn:`<p>部署失敗時，先看 Serial 印出什麼訊息。選一個你遇到的症狀，看常見原因與檢查順序。</p>`,
+ exp:"trouble",
+ build:["記下完整的錯誤訊息與 SDK 版本","對照下面的症狀逐項檢查","一次只改一個條件，改完再測","仍然不行就到 Ameba 論壇附上訓練設定與轉檔指令發問"]},
+{t:"結業測驗",s:"確認你記得關鍵步驟",learn:`<p>四題檢查你是否掌握整條部署流程。</p>`,exp:"quiz",build:[]}
+];
+
+let cur=0,done=[];
+try{done=JSON.parse(localStorage.getItem("y7amb")||"[]")}catch(e){}
+const save=()=>{try{localStorage.setItem("y7amb",JSON.stringify(done))}catch(e){}};
+
+function render(){
+  drawMap();
+  const p=Math.round(done.length/M.length*100);$("pb").style.width=p+"%";$("pt").textContent=`已完成 ${done.length} / ${M.length} 個任務（${p}%）`;
+  const m=M[cur];
+  $("ms").innerHTML=`<h2>${m.t}</h2><p class="sub">${m.s}</p>
+  <h3 class="l">學習</h3>${m.learn}
+  ${m.exp?`<h3 class="e">實驗</h3><div id="exp"></div>`:""}
+  ${m.build.length?`<h3>動手做</h3>`+m.build.map((b,j)=>`<label class="ck" style="color:var(--ink);font-size:1rem;justify-content:flex-start"><input type="checkbox" data-j="${j}">${b}</label>`).join(""):""}
+  <div class="foot"><div>${cur>0?'<button class="btn g" id="pv" type="button">上一個任務</button>':""}</div>
+  <div><button class="btn" id="dn" type="button">${done.includes(cur)?"取消完成標記":"標記完成"}</button>${cur<M.length-1?'<button class="btn g" id="nx" type="button">下一個任務</button>':""}</div></div>`;
+  if($("pv"))$("pv").onclick=()=>{cur--;render();scrollTo({top:0})};
+  if($("nx"))$("nx").onclick=()=>{cur++;render();scrollTo({top:0})};
+  $("dn").onclick=()=>{done=done.includes(cur)?done.filter(x=>x!==cur):[...done,cur];save();render()};
+  if(m.exp)({pick,nms,trouble,quiz,code})[m.exp]($("exp"));
+}
+
+function choice(box,qs,onEnd){ // simple option list
+  box.innerHTML=qs;
+}
+function pick(el){
+  const O=[
+   ["完整的 YOLOv7","bad","不行。AMB82-Mini 只能部署 yolov7-tiny。"],
+   ["yolov7-tiny，訓練後直接轉檔","bad","不建議。官方流程要求訓練後先做重新參數化，跳過常造成載入了卻沒有框。"],
+   ["yolov7-tiny，訓練後重新參數化再轉 .nb","ok","正確。這是官方流程：tiny 架構 + re-parameterization + 轉成 .nb。"],
+   ["任何自己訓練的模型都能直接轉","bad","不一定。模型必須是 SDK 支援的架構，物件偵測目前列出的是 YOLOv3/v4/v7-tiny。"]];
+  el.innerHTML=`<p>哪一種做法可以部署到 AMB82-Mini 的自訂物件偵測？</p>`+O.map((o,i)=>`<button class="opt" data-i="${i}" type="button">${o[0]}</button>`).join("")+`<p class="res" id="r"></p>`;
+  el.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{const o=O[+b.dataset.i];el.querySelectorAll(".opt").forEach(x=>x.classList.remove("ok","no"));b.classList.add(o[1]==="ok"?"ok":"no");$("r").textContent=o[2]});
+}
+
+function trouble(el){
+  const T=[
+   ["error: vipnn not applied","模型沒有成功載入。依序檢查：板子套件（SDK）版本是否與範例相符；modelSelect 選的模型是否真的存在；使用預設模型時，變體資料夾裡的模型檔是否完整。先用沒修改過的預設範例確認環境正常。"],
+   ["Model (.nb file) missing or customized model name mismatch","找不到自訂模型或檔名不符。把 .nb 放進 sketch 資料夾，並確認檔名符合 SDK 要求；若改用 SD 卡，要在 IDE 啟用從 SD 卡載入 NN 模型，並確認檔案確實在卡上。"],
+   ["模型載入成功，但沒有框或分數","論壇多個案例的原因是轉檔前處理不完整。檢查：訓練後是否做過重新參數化；deploy yaml 的 nc 是否等於訓練類別數；是否依官方 YOLOv7-tiny 範例修改了 Detect.forward；匯出時選的輸出節點是否正確。"],
+   ["Total number of objects detected = 0","先排除門檻與過濾：confidence 預設 0.5 可能太高；ObjectClassList 裡該類別的 filter 是否被設為 0；光線與目標大小是否適合。這些都沒問題再回頭查模型。"],
+   ["類別名稱顯示錯誤，或程式在畫框時當掉","範例用 itemList[類別編號] 查名稱，而 itemList 預設是 80 類。自訂模型的類別數與順序不同時，要把 ObjectClassList.h 改成與你訓練時一致的類別表，否則名稱會對錯，編號超出範圍時還可能出錯。"]];
+  el.innerHTML=T.map((t,i)=>`<button class="opt" data-i="${i}" type="button">${t[0]}</button>`).join("")+`<div class="box" id="r" hidden></div>`;
+  el.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{el.querySelectorAll(".opt").forEach(x=>x.classList.remove("ok"));b.classList.add("ok");const r=$("r");r.hidden=false;r.textContent=T[+b.dataset.i][1]});
+}
+
+function nms(el){
+  const C=[[60,60,140,180,.92,"person"],[72,70,140,175,.81,"person"],[50,50,150,190,.64,"person"],[270,130,150,120,.88,"dog"],[285,140,140,115,.58,"dog"],[380,30,60,60,.35,"cup"],[200,200,70,60,.47,"cup"]];
+  el.innerHTML=`<p>七個候選框來自模型輸出。調整 confidence 與 NMS 門檻，看哪些框被留下。虛線是被丟掉的框。</p><canvas id="cv" width="480" height="300" role="img" aria-label="候選框與 NMS 結果"></canvas>
+  <label for="cf">confidence 門檻<span id="cfv"></span></label><input id="cf" type="range" min="0" max="100" value="50">
+  <label for="nm">NMS 門檻（IoU）<span id="nmv"></span></label><input id="nm" type="range" min="0" max="100" value="30">
+  <p class="out" id="o"></p><p class="res">門檻太低會留下重複框，NMS 太高會讓重疊的框沒被合併；confidence 太高則可能漏掉真正的物體。</p>`;
+  const cv=$("cv"),x=cv.getContext("2d");
+  const iou=(a,b)=>{const w=Math.max(0,Math.min(a[0]+a[2],b[0]+b[2])-Math.max(a[0],b[0])),h=Math.max(0,Math.min(a[1]+a[3],b[1]+b[3])-Math.max(a[1],b[1])),i=w*h;return i/(a[2]*a[3]+b[2]*b[3]-i)};
+  function run(){
+    const cf=$("cf").value/100,nm=$("nm").value/100;$("cfv").textContent=cf.toFixed(2);$("nmv").textContent=nm.toFixed(2);
+    const s=C.filter(c=>c[4]>=cf).sort((a,b)=>b[4]-a[4]),keep=[];
+    s.forEach(c=>{if(keep.every(k=>k[5]!==c[5]||iou(k,c)<=nm))keep.push(c)});
+    x.clearRect(0,0,480,300);x.font="13px sans-serif";
+    C.forEach(c=>{if(!keep.includes(c)){x.setLineDash([5,4]);x.strokeStyle="#4b6a5c";x.lineWidth=1.5;x.strokeRect(c[0],c[1],c[2],c[3])}});
+    x.setLineDash([]);
+    keep.forEach(c=>{x.strokeStyle="#e0a458";x.lineWidth=3;x.strokeRect(c[0],c[1],c[2],c[3]);x.fillStyle="#e0a458";x.fillRect(c[0],c[1]-18,86,18);x.fillStyle="#1b1100";x.fillText(`${c[5]} ${c[4].toFixed(2)}`,c[0]+4,c[1]-4)});
+    $("o").textContent=`Total number of objects detected = ${keep.length}`;
+  }
+  $("cf").oninput=run;$("nm").oninput=run;run();
+}
+
+function quiz(el){
+  const Q=[
+   ["AMB82-Mini 的自訂物件偵測要用哪種 YOLOv7？",["完整 YOLOv7","yolov7-tiny","YOLOv7-X","任何版本都行"],1,"只有 yolov7-tiny 可以部署。"],
+   ["訓練完成後、轉檔之前必須做什麼？",["重新參數化","把 nc 改成 0","刪除 hyp 檔","只要改副檔名"],0,"執行 reparam_yolov7-tiny.py，把多分支結構合併成部署版。"],
+   ["模型載入成功卻沒有框，最先該檢查什麼？",["WiFi 密碼","是否依官方範例修改 Detect.forward 並選對輸出節點","螢幕解析度","板子顏色"],1,"輸出節點與 Detect 修改是最常見的原因。"],
+   ["想讓板子不偵測某一類物件，應該怎麼做？",["改物件編號","刪掉整個 ObjectClassList","把該類別的 filter 設為 0","把 confidence 設為 1"],2,"物件編號固定不可改，只調 filter。"],
+   ["範例裡 CHANNELNN（通道 3）的用途是什麼？",["把 RGB 小畫面送給 NN 做偵測","傳送音訊","儲存 SD 卡檔案","控制 WiFi"],0,"通道 0 走 H264 給 RTSP 串流，通道 3 輸出 RGB 小畫面餵給 NN。"],
+   ["偵測結果的座標 xMin()、yMin() 是什麼範圍？",["0.00 到 1.00 的比例","直接是像素","0 到 255","角度"],0,"結果是 0 到 1 的比例，要乘上串流的寬與高才會變成像素座標。"]];
+  let i=0,sc=0;
+  (function show(){
+    if(i>=Q.length){el.innerHTML=`<p class="out" style="font-size:1.4rem">${sc} / ${Q.length}</p><p>${sc===Q.length?"全對，可以標記任務完成。":"回到前面的任務複習一下，再試一次。"}</p><button class="btn" id="re" type="button">重新測驗</button>`;$("re").onclick=()=>{i=0;sc=0;show()};return}
+    const q=Q[i];el.innerHTML=`<p>第 ${i+1} / ${Q.length} 題：${q[0]}</p>`+q[1].map((t,k)=>`<button class="opt" data-k="${k}" type="button">${t}</button>`).join("")+`<p class="res" id="r"></p>`;
+    el.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{const k=+b.dataset.k;if(k===q[2])sc++;
+      el.querySelectorAll(".opt").forEach(o=>{o.disabled=true;if(+o.dataset.k===q[2])o.classList.add("ok");else if(o===b)o.classList.add("no")});
+      $("r").textContent=(k===q[2]?"答對了。":"答錯了。")+q[3];
+      const n=document.createElement("button");n.className="btn";n.type="button";n.textContent=i<Q.length-1?"下一題":"看成績";n.onclick=()=>{i++;show()};el.appendChild(n)});
+  })();
+}
+function drawMap(){
+  const N=M.length,W=Math.max(760,N*100),H=250,pt=M.map((_,i)=>[60+i*(W-120)/(N-1),125+62*Math.sin(i*1.25+.4)]);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`;
+  for(let i=0;i<70;i++)s+=`<circle cx="${(i*173)%W}" cy="${(i*97+31)%H}" r="${i%7?.8:1.4}" fill="#8aa597" opacity="${.25+(i%5)*.12}"/>`;
+  for(let i=0;i<N-1;i++){const a=pt[i],b=pt[i+1],mx=(a[0]+b[0])/2,on=done.includes(i)&&done.includes(i+1);
+    s+=`<path d="M${a[0]},${a[1]} C${mx},${a[1]} ${mx},${b[1]} ${b[0]},${b[1]}" fill="none" stroke="${on?"#e0a458":"#3a5c4e"}" stroke-width="${on?3:2}"${on?"":' stroke-dasharray="6 6"'}/>`}
+  pt.forEach(([x,y],i)=>{const d=done.includes(i),c=i===cur;
+    s+=`<g class="nd" tabindex="0" role="button" data-i="${i}" aria-label="任務 ${i+1}：${M[i].t}${d?"（已完成）":""}" aria-current="${c}"><circle cx="${x}" cy="${y}" r="26" fill="transparent"/>`
+    +(c?`<circle class="halo" cx="${x}" cy="${y}" r="20" fill="none" stroke="#e0a458" stroke-width="1.5"/>`:"")
+    +`<circle cx="${x}" cy="${y}" r="${c?15:11}" fill="${d?"#e0a458":"#10241c"}" stroke="${d||c?"#e0a458":"#5b8472"}" stroke-width="2.5"/>`
+    +(d?`<path d="M${x-5},${y} l4,4 l7,-8" stroke="#1b1100" stroke-width="2.5" fill="none"/>`:`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="12" fill="#e9efe6">${i+1}</text>`)
+    +`<text x="${x}" y="${y>125?y-30:y+44}" text-anchor="middle" font-size="14" fill="${c?"#e0a458":"#cfe3d6"}">${M[i].t}</text></g>`});
+  const w=$("map");w.innerHTML=s+"</svg>";
+  const go=g=>{cur=+g.dataset.i;render();scrollTo({top:0})};
+  w.querySelectorAll(".nd").forEach(g=>{g.onclick=()=>go(g);g.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go(g)}}});
+  w.scrollLeft=pt[cur][0]-w.clientWidth/2;
+}
+
+const SRC=[
+{n:"引入與常數",h:["CHANNELNN 3","NNWIDTH","NNHEIGHT"],c:String.raw`#include "WiFi.h"
+#include "StreamIO.h"
+#include "VideoStream.h"
+#include "RTSP.h"
+#include "NNObjectDetection.h"
+#include "VideoStreamOverlay.h"
+#include "ObjectClassList.h"
+
+#define CHANNEL 0
+#define CHANNELNN 3
+
+// Lower resolution for NN processing
+#define NNWIDTH 576
+#define NNHEIGHT 320
+
+// OSD layers
+#define RECTLAYER OSDLAYER0
+#define TEXTLAYER OSDLAYER1`,t:`<ul><li><code>NNObjectDetection.h</code> 提供偵測物件；<code>RTSP.h</code> 與 <code>StreamIO.h</code> 負責串流；<code>VideoStreamOverlay.h</code> 是在影像上畫框的 OSD。</li><li><code>ObjectClassList.h</code> 是類別表，第九段會說明。</li><li><b>CHANNEL 0</b> 是高畫質串流通道，<b>CHANNELNN 3</b> 是專門給 NN 的小尺寸 RGB 通道。</li><li>OSD 用兩層：一層畫框、一層寫文字。</li></ul>`},
+{n:"物件與設定",h:["configNN"],c:String.raw`VideoSetting config(VIDEO_FHD, 30, VIDEO_H264, 0);
+VideoSetting configNN(NNWIDTH, NNHEIGHT, 10, VIDEO_RGB, 0);
+NNObjectDetection ObjDet;
+RTSP rtsp;
+StreamIO videoStreamer(1, 1);
+StreamIO videoStreamerNN(1, 1);
+
+char ssid[] = "yourNetwork";    // your network SSID (name)
+char pass[] = "Password";       // your network password
+int status = WL_IDLE_STATUS;
+
+IPAddress ip;
+int rtsp_portnum;`,t:`<ul><li><code>config</code>：1080p、30 fps、H264，給 RTSP 串流看。</li><li><code>configNN</code>：576×320、10 fps、RGB，給 NN 偵測。自訂模型時，請對照官方指引確認輸入尺寸設定。</li><li><code>StreamIO(1, 1)</code> 是一個輸入對一個輸出的資料管線，這裡建了兩條。</li><li>把 <code>ssid</code> 與 <code>pass</code> 改成你的 WiFi。</li></ul>`},
+{n:"連 WiFi",h:[],c:String.raw`void setup() {
+  Serial.begin(115200);
+
+  // attempt to connect to Wifi network:
+  while (status != WL_CONNECTED) {
+    Serial.print("Attempting to connect to WPA SSID: ");
+    Serial.println(ssid);
+    status = WiFi.begin(ssid, pass);
+
+    // wait 2 seconds for connection:
+    delay(2000);
+  }
+  ip = WiFi.localIP();`,t:`<ul><li>反覆嘗試連線，每次間隔 2 秒，直到連上為止。</li><li>連上後把 IP 存進 <code>ip</code>，稍後印出 RTSP 網址時使用。</li></ul>`},
+{n:"相機與 RTSP",h:["setBitrate"],c:String.raw`  // Adjust the bitrate based on your WiFi network quality
+  config.setBitrate(2 * 1024 * 1024);     // Recommend to use 2Mbps for RTSP streaming to prevent network congestion
+  Camera.configVideoChannel(CHANNEL, config);
+  Camera.configVideoChannel(CHANNELNN, configNN);
+  Camera.videoInit();
+
+  // Configure RTSP with corresponding video format information
+  rtsp.configVideo(config);
+  rtsp.begin();
+  rtsp_portnum = rtsp.getPort();`,t:`<ul><li>先設定串流位元率（範例建議 2 Mbps，避免網路壅塞），再把兩個通道的格式設給相機，最後 <code>videoInit()</code> 啟動。</li><li>RTSP 用 <code>config</code> 的格式啟動，並取得連接埠（預設 554）。</li></ul>`},
+{n:"載入 NN 模型",h:["modelSelect"],c:String.raw`  // Configure object detection with corresponding video format information
+  // Select Neural Network(NN) task and models
+  ObjDet.configVideo(configNN);
+  ObjDet.modelSelect(OBJECT_DETECTION, CUSTOMIZED_YOLOV7TINY, NA_MODEL, NA_MODEL);
+  ObjDet.begin();`,t:`<ul><li>這是整份程式最關鍵的一段。原範例是 <code>DEFAULT_YOLOV4TINY</code>，這裡換成 <code>CUSTOMIZED_YOLOV7TINY</code>，才會去載入你自己轉好的 <code>.nb</code>。</li><li>四個參數依序是：任務、物件偵測模型、人臉偵測模型、人臉辨識模型，用不到的填 <code>NA_MODEL</code>。</li><li><b>必須先 modelSelect，再 begin。</b>順序反了會出問題。</li><li>找不到 .nb 時，Serial 會出現前面除錯任務提過的錯誤訊息。</li></ul>`},
+{n:"串流管線",h:["registerOutput(ObjDet)"],c:String.raw`  // Configure StreamIO object to stream data from video channel to RTSP
+  videoStreamer.registerInput(Camera.getStream(CHANNEL));
+  videoStreamer.registerOutput(rtsp);
+  if (videoStreamer.begin() != 0) {
+    Serial.println("StreamIO link start failed");
+  }
+
+  // Start data stream from video channel
+  Camera.channelBegin(CHANNEL);
+
+  // Configure StreamIO object to stream data from RGB video channel to object detection
+  videoStreamerNN.registerInput(Camera.getStream(CHANNELNN));
+  videoStreamerNN.setStackSize();
+  videoStreamerNN.setTaskPriority();
+  videoStreamerNN.registerOutput(ObjDet);
+  if (videoStreamerNN.begin() != 0) {
+    Serial.println("StreamIO link start failed");
+  }
+
+  // Start video channel for NN
+  Camera.channelBegin(CHANNELNN);
+
+  // Start OSD drawing on RTSP video channel
+  OSD.configVideo(CHANNEL, config);
+  OSD.begin();
+}`,t:`<ul><li><b>第一條管線</b>：通道 0 → RTSP，讓你用 VLC 看即時畫面。</li><li><b>第二條管線</b>：通道 3 → <code>ObjDet</code>，把小畫面送進 NN。</li><li><code>begin()</code> 回傳不是 0 代表串接失敗，會印出訊息。</li><li>最後讓 OSD 附著在通道 0，之後畫的框才會出現在串流畫面上。</li></ul>`},
+{n:"loop：取結果",h:["getResult","getResultCount"],c:String.raw`void loop() {
+  std::vector<ObjectDetectionResult> results = ObjDet.getResult();
+
+  uint16_t im_h = config.height();
+  uint16_t im_w = config.width();
+
+  Serial.print("Network URL for RTSP Streaming: ");
+  Serial.print("rtsp://");
+  Serial.print(ip);
+  Serial.print(":");
+  Serial.println(rtsp_portnum);
+  Serial.println(" ");
+
+  printf("Total number of objects detected = %d\r\n", ObjDet.getResultCount());`,t:`<ul><li><code>getResult()</code> 取回目前這一幀的所有偵測結果。</li><li><code>im_w</code>、<code>im_h</code> 是串流畫面的寬高，下一段用來把比例座標換成像素。</li><li>每圈都會印出 RTSP 網址與偵測數量，<code>Total number of objects detected = 0</code> 就是在這裡印的。</li></ul>`},
+{n:"loop：畫框",h:["filter","item.xMin","OSD.drawRect"],c:String.raw`  OSD.createBitmap(CHANNEL, RECTLAYER);
+  OSD.createBitmap(CHANNEL, TEXTLAYER);
+  if (ObjDet.getResultCount() > 0) {
+    for (uint32_t i = 0; i < ObjDet.getResultCount(); i++) {
+      int obj_type = results[i].type();
+      if (itemList[obj_type].filter) {    // check if item should be ignored
+
+        ObjectDetectionResult item = results[i];
+        // Result coordinates are floats ranging from 0.00 to 1.00
+        // Multiply with RTSP resolution to get coordinates in pixels
+        int xmin = (int)(item.xMin() * im_w);
+        int xmax = (int)(item.xMax() * im_w);
+        int ymin = (int)(item.yMin() * im_h);
+        int ymax = (int)(item.yMax() * im_h);
+
+        // Draw boundary box
+        printf("Item %d %s:\t%d %d %d %d\n\r", i, itemList[obj_type].objectName, xmin, xmax, ymin, ymax);
+        OSD.drawRect(CHANNEL, xmin, ymin, xmax, ymax, 3, OSD_COLOR_WHITE, RECTLAYER);
+
+        // Print identification text
+        char text_str[20];
+        snprintf(text_str, sizeof(text_str), "%s %d", itemList[obj_type].objectName, item.score());
+        OSD.drawText(CHANNEL, xmin, ymin - OSD.getTextHeight(CHANNEL), text_str, OSD_COLOR_CYAN, TEXTLAYER);
+      }
+    }
+  }
+  OSD.update(CHANNEL, RECTLAYER);
+  OSD.update(CHANNEL, TEXTLAYER);
+
+  // delay to wait for new results
+  delay(100);
+}`,t:`<ul><li><code>results[i].type()</code> 是類別編號，用它去查 <code>itemList</code>；<code>filter</code> 為 0 的類別直接跳過。</li><li>座標是 0～1 的比例，乘上 <code>im_w</code>、<code>im_h</code> 才是像素。</li><li><code>OSD.drawRect</code> 畫白色框、<code>OSD.drawText</code> 在框上方寫「類別名稱 分數」，最後 <code>OSD.update</code> 把兩層送出。</li><li><code>delay(100)</code> 讓程式等新結果，不用每毫秒都查。</li></ul>`},
+{n:"ObjectClassList.h",skip:1,h:["filter"],c:String.raw`struct ObjectDetectionItem {
+  uint8_t index;
+  const char* objectName;
+  uint8_t filter;
+};
+
+// Index number is fixed and hard-coded from training
+// Set the filter value to 0 to ignore any recognized objects
+ObjectDetectionItem itemList[80] = {
+  {0,  "person",  1},
+  {1,  "bicycle", 1},
+  {2,  "car",     1},
+  // ... 其餘類別依序排列，預設模型共 80 類
+  {79, "toothbrush", 1}};`,t:`<ul><li>每一項有編號、名稱、filter。<b>編號由訓練時決定，不能更動</b>；想忽略某類別，只把 filter 改成 0（例如 bicycle）。</li><li>這是獨立的標頭檔，不屬於 .ino，所以上面「複製完整 sketch」不包含它。</li><li><b>自訂模型要改這份表：</b>把名稱換成你訓練的類別，並保持與訓練時相同的順序與數量，否則名稱會對錯。</li></ul>`}
+];
+function code(el){
+  const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  el.innerHTML=`<p>點選步驟，一次看一段程式與說明。黃色標記的是該段的重點行。</p><div class="steps" id="st"></div><pre id="cd" tabindex="0"></pre><div class="box nt" id="nt"></div><button class="btn g" id="cp" type="button">複製完整 sketch（第 1～8 段）</button><span class="res" id="cps"></span>`;
+  $("st").innerHTML=SRC.map((x,i)=>`<button type="button" data-k="${i}">${i+1} ${x.n}</button>`).join("");
+  const show=k=>{const x=SRC[k];
+    $("cd").innerHTML=x.c.split("\n").map(l=>x.h.some(h=>l.includes(h))?`<span class="hl">${esc(l)||" "}</span>`:esc(l)).join("\n");
+    $("nt").innerHTML=x.t;
+    $("st").querySelectorAll("button").forEach((b,i)=>b.classList.toggle("on",i===k))};
+  $("st").querySelectorAll("button").forEach(b=>b.onclick=()=>show(+b.dataset.k));
+  $("cp").onclick=async()=>{const all=SRC.filter(x=>!x.skip).map(x=>x.c).join("\n\n");
+    try{await navigator.clipboard.writeText(all);$("cps").textContent=" 已複製，貼到 Arduino IDE 後記得填 WiFi。"}
+    catch(e){$("cps").textContent=" 瀏覽器不允許自動複製，請改用上方各段手動選取。"}};
+  show(0);
+}
+render();
+</script>
+</body>
+</html>
